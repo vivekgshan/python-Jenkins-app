@@ -17,7 +17,7 @@ pipeline {
 
         stage('Run Docker Container') {
             steps {
-                sh 'docker run -d -p 5000:5000 --name python_jenkins_app python-jenkins-app'
+                sh 'docker run -d -p 5001:5001 --name python_jenkins_app python-jenkins-app'
             }
         }
     }
