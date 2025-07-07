@@ -1,25 +1,50 @@
 pipeline {
     agent any
 
+    environment {
+        IMAGE_NAME = 'python-jenkins-app'
+        CONTAINER_NAME = 'python_jenkins_app'
+        APP_PORT = '5001'
+    }
+
     stages {
         stage('Checkout Code') {
             steps {
-                // Clone the repo; 
+                echo 'Checking out source code...'
                 checkout scm
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t python-jenkins-app .'
+                echo "Building Docker image: ${IMAGE_NAME}"
+                sh "docker build -t ${IMAGE_NAME} ."
+            }
+        }
+
+        stage('Redeploy Container if Running') {
+            steps {
+                echo "Checking and redeploying ${CONTAINER_NAME} if it's already running"
+                sh """
+                    if [ \$(docker ps -q -f name=${CONTAINER_NAME}) ]; then
+                        echo "Stopping running container..."
+                        docker stop ${CONTAINER_NAME}
+                        docker rm ${CONTAINER_NAME}
+                    elif [ \$(docker ps -a -q -f name=${CONTAINER_NAME}) ]; then
+                        echo "Container exists but not running. Removing..."
+                        docker rm ${CONTAINER_NAME}
+                    else
+                        echo "No existing container to remove."
+                    fi
+                """
             }
         }
 
         stage('Run Docker Container') {
             steps {
-                sh 'docker run -d -p 5001:5001 --name python_jenkins_app python-jenkins-app'
+                echo "Starting fresh container: ${CONTAINER_NAME}"
+                sh "docker run -d -p ${APP_PORT}:${APP_PORT} --name ${CONTAINER_NAME} ${IMAGE_NAME}"
             }
         }
     }
-
 }
